@@ -11,10 +11,9 @@ from ui.session_entry_page import SessionEntryPage
 from ui.styles import build_stylesheet
 from ui.top_nav_bar import NAV_TABS, TopNavBar
 
-# Tab yang sudah punya halaman nyata. Sisanya ("dyno", "brake", "riwayat",
-# "setting") baru placeholder sampai halamannya dibangun.
-IMPLEMENTED_TABS = {"registrasi"}
 
+IMPLEMENTED_TABS = {"registrasi"}
+TABS_WITHOUT_NAV_BAR = {"registrasi"}
 TAB_DISPLAY_NAMES = {key: label for key, label, _shortcut in NAV_TABS}
 
 
@@ -44,9 +43,8 @@ class MainWindow(QMainWindow):
         self.session_entry_page.session_started.connect(self._on_session_started)
         self.session_entry_page.view_all_requested.connect(lambda: self._on_tab_requested("riwayat"))
         self.stack.addWidget(self.session_entry_page)
-
+        self.top_nav.setVisible("registrasi" not in TABS_WITHOUT_NAV_BAR)
         self.statusBar().showMessage("Siap.", 3000)
-
         self._setup_shortcuts()
 
     def _setup_shortcuts(self) -> None:
@@ -64,6 +62,8 @@ class MainWindow(QMainWindow):
             return
 
         self.top_nav.set_active_tab(key)
+        self.top_nav.setVisible(key not in TABS_WITHOUT_NAV_BAR)
+
         if key == "registrasi":
             self.stack.setCurrentWidget(self.session_entry_page)
 
