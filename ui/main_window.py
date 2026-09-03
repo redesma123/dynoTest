@@ -1,23 +1,24 @@
 """
 Main Window & Router aplikasi.
-
 """
 
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QVBoxLayout, QWidget
 
+from core.models import TestMode
 from database.repository import DatabaseRepository
-from ui.session_entry_page import SessionEntryPage
+from ui.navigation import NAV_TABS, TopNavBar
+from ui.pages import BrakeTestPage, DynoTestPage, SessionEntryPage
 from ui.styles import build_stylesheet
-from ui.top_nav_bar import NAV_TABS, TopNavBar
 
-
-IMPLEMENTED_TABS = {"registrasi"}
+IMPLEMENTED_TABS = {"registrasi", "dyno", "brake"}
 TABS_WITHOUT_NAV_BAR = {"registrasi"}
 TAB_DISPLAY_NAMES = {key: label for key, label, _shortcut in NAV_TABS}
 
 
 class MainWindow(QMainWindow):
+    """Jendela utama aplikasi DynoTest & BrakeTest."""
+
     def __init__(self, repository: DatabaseRepository) -> None:
         super().__init__()
         self.setWindowTitle("DynoTest & BrakeTest \u2014 AUTO-TECH SYSTEMS")
@@ -43,6 +44,13 @@ class MainWindow(QMainWindow):
         self.session_entry_page.session_started.connect(self._on_session_started)
         self.session_entry_page.view_all_requested.connect(lambda: self._on_tab_requested("riwayat"))
         self.stack.addWidget(self.session_entry_page)
+
+        self.dyno_test_page = DynoTestPage(self._repository)
+        self.stack.addWidget(self.dyno_test_page)
+
+        self.brake_test_page = BrakeTestPage(self._repository)
+        self.stack.addWidget(self.brake_test_page)
+
         self.top_nav.setVisible("registrasi" not in TABS_WITHOUT_NAV_BAR)
         self.statusBar().showMessage("Siap.", 3000)
         self._setup_shortcuts()
@@ -66,6 +74,10 @@ class MainWindow(QMainWindow):
 
         if key == "registrasi":
             self.stack.setCurrentWidget(self.session_entry_page)
+        elif key == "dyno":
+            self.stack.setCurrentWidget(self.dyno_test_page)
+        elif key == "brake":
+            self.stack.setCurrentWidget(self.brake_test_page)
 
     def _on_cancel_shortcut(self) -> None:
         if self.stack.currentWidget() is self.session_entry_page:
@@ -73,6 +85,14 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Input dibatalkan.", 2000)
 
     def _on_session_started(self, session_id: int) -> None:
-        # TODO: navigasi otomatis ke Dyno Test / Brake Test page setelah
-        # halaman tsb dibuat (mengikuti Page Map di docs/DESIGN.md).
-        self.statusBar().showMessage(f"Sesi #{session_id} dibuat, siap lanjut ke pengujian.", 4000)
+        """Routing ke halaman yang sesuai berdasarkan test_mode sesi yang baru dibuat."""
+        session = self._repository.get_test_session(session_id)
+        if session and session.test_mode == TestMode.BRAKE:
+            self.brake_test_page.load_session(session_id)
+            self._on_tab_requested("brake")
+        else:
+            self.dyno_test_page.load_session(session_id)
+            self._on_tab_requested("dyno")
+        self.statusBar().showMessage(
+            f"Sesi #{session_id} dibuat. Tekan START untuk memulai pengujian.", 5000
+        )
