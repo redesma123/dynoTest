@@ -8,10 +8,10 @@ from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QVBoxLayout, QWidget
 from core.models import TestMode
 from database.repository import DatabaseRepository
 from ui.navigation import NAV_TABS, TopNavBar
-from ui.pages import BrakeTestPage, DynoTestPage, SessionEntryPage
+from ui.pages import BrakeTestPage, DynoTestPage, HistoryPage, SessionEntryPage
 from ui.styles import build_stylesheet
 
-IMPLEMENTED_TABS = {"registrasi", "dyno", "brake"}
+IMPLEMENTED_TABS = {"registrasi", "dyno", "brake", "riwayat"}
 TABS_WITHOUT_NAV_BAR = {"registrasi"}
 TAB_DISPLAY_NAMES = {key: label for key, label, _shortcut in NAV_TABS}
 
@@ -51,6 +51,9 @@ class MainWindow(QMainWindow):
         self.brake_test_page = BrakeTestPage(self._repository)
         self.stack.addWidget(self.brake_test_page)
 
+        self.history_page = HistoryPage(self._repository)
+        self.stack.addWidget(self.history_page)
+
         self.top_nav.setVisible("registrasi" not in TABS_WITHOUT_NAV_BAR)
         self.statusBar().showMessage("Siap.", 3000)
         self._setup_shortcuts()
@@ -78,6 +81,9 @@ class MainWindow(QMainWindow):
             self.stack.setCurrentWidget(self.dyno_test_page)
         elif key == "brake":
             self.stack.setCurrentWidget(self.brake_test_page)
+        elif key == "riwayat":
+            self.history_page.reload_data()
+            self.stack.setCurrentWidget(self.history_page)
 
     def _on_cancel_shortcut(self) -> None:
         if self.stack.currentWidget() is self.session_entry_page:

@@ -3,6 +3,7 @@ QSS Stylesheet Generator untuk DynoTest & BrakeTest.
 Extracted from styles.py to respect RULES.md §2 (max ~300 lines per file).
 """
 
+from ui.styles.styles_history_qss import get_history_qss
 from ui.styles.styles_widgets_qss import get_widget_qss
 
 
@@ -231,4 +232,5 @@ def get_qss_styles(c, spacing, font_ui: str, font_mono: str, min_touch_target: i
     }}
     """
     widgets_qss = get_widget_qss(c, spacing, font_mono, min_touch_target)
-    return base_qss + widgets_qss
+    history_qss = get_history_qss(c, spacing, font_mono, min_touch_target)
+    return base_qss + widgets_qss + history_qss
