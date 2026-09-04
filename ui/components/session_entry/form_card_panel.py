@@ -8,14 +8,12 @@ from datetime import datetime
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import (
-    QButtonGroup,
     QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
-    QRadioButton,
     QVBoxLayout,
     QWidget,
 )
@@ -122,25 +120,6 @@ class FormCardPanel(QFrame):
         self.timestamp_lbl.setStyleSheet("padding: 8px 12px; background-color: #F1F5F9; border-radius: 8px; font-weight: 600;")
         col_right.addWidget(self.timestamp_lbl)
 
-        col_right.addWidget(_field_label("MODE UJI"))
-        mode_box = QHBoxLayout()
-        mode_box.setSpacing(Spacing.MD)
-        self.mode_group = QButtonGroup(self)
-
-        self.rb_dyno = QRadioButton("Dyno Test")
-        self.rb_dyno.setChecked(True)
-        self.rb_brake = QRadioButton("Brake Test")
-        self.rb_combined = QRadioButton("Lengkap (Combined)")
-
-        self.mode_group.addButton(self.rb_dyno, 1)
-        self.mode_group.addButton(self.rb_brake, 2)
-        self.mode_group.addButton(self.rb_combined, 3)
-
-        mode_box.addWidget(self.rb_dyno)
-        mode_box.addWidget(self.rb_brake)
-        mode_box.addWidget(self.rb_combined)
-        col_right.addLayout(mode_box)
-
         self.bobot_input = _field_input("⚖", "150.0")
         self.bobot_input.setText("150.0")
         col_right.addWidget(_field_label("BOBOT UJI (kg)"))
@@ -207,13 +186,6 @@ class FormCardPanel(QFrame):
         except ValueError:
             bobot_val = 150.0
 
-        if self.rb_brake.isChecked():
-            test_mode = TestMode.BRAKE
-        elif self.rb_combined.isChecked():
-            test_mode = TestMode.COMBINED
-        else:
-            test_mode = TestMode.DYNO
-
         data = {
             "test_number": no_uji,
             "vin": no_rangka,
@@ -221,7 +193,7 @@ class FormCardPanel(QFrame):
             "vehicle_category": self.jenis_combo.currentText(),
             "brand_model": self.merk_tipe_input.text().strip(),
             "inspector_name": penguji,
-            "test_mode": test_mode,
+            "test_mode": TestMode.BRAKE,
             "vehicle_weight_kg": bobot_val,
             "notes": self.catatan_input.text().strip(),
         }
@@ -238,4 +210,3 @@ class FormCardPanel(QFrame):
         self.bobot_input.setText("150.0")
         self.catatan_input.clear()
         self.error_label.setVisible(False)
-        self.rb_dyno.setChecked(True)

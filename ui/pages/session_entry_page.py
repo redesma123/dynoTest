@@ -57,11 +57,11 @@ class SessionEntryPage(QWidget):
         root.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
         root.setSpacing(Spacing.MD)
 
-        title = QLabel("Registrasi Pengujian Kendaraan (KIR / Dyno)")
+        title = QLabel("Registrasi Pengujian Kendaraan (KIR / Brake Test)")
         title.setObjectName("pageTitle")
         root.addWidget(title)
 
-        subtitle = QLabel("Masukkan data identitas kendaraan, penguji, dan pilih mode pengujian untuk memulai.")
+        subtitle = QLabel("Masukkan data identitas kendaraan dan nama penguji untuk memulai pengujian.")
         subtitle.setObjectName("pageSubtitle")
         root.addWidget(subtitle)
 

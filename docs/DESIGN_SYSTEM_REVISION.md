@@ -64,3 +64,14 @@ Panel Evaluasi Hasil (`BrakeEvalPanel`) menggunakan **Hero Badges** dengan kontr
 4. **Braking Torque (Nm)**: Torsi tahanan rem ($T = F_{\text{rem}} \times r_{\text{roller}}$, $r = 0.15\text{ m}$).
 5. **Waktu Rem (s)**: Durasi pengereman dari Kecepatan Target (misal 60 km/h) hingga roller berhenti ($0\text{ km/h}$).
 6. **Intensitas Lampu (Lux)**: Pengukuran intensitas cahaya sorot utama headlamp (Threshold $\ge 12,000\text{ Lux}$).
+
+---
+
+## 5. Spesifikasi Form Registrasi Sesi Uji (`SessionEntryPage`)
+
+Form Registrasi menggunakan Layout 2 Kolom Sejajar (`FormCardPanel`):
+- **Kolom Kiri (Identitas Kendaraan)**: Nomor Uji (KIR), Nomor Rangka (VIN), Nomor Polisi, Jenis Kendaraan, Merk & Tipe.
+- **Kolom Kanan (Data Pengujian)**: Nama Penguji, Tanggal & Jam Otomatis, Bobot Uji (kg), Catatan Khusus.
+- **Sub-header / Subtitle**: `"Masukkan data identitas kendaraan dan nama penguji untuk memulai pengujian."`
+- **Catatan Mode Uji**: Bidang pilihan *Mode Uji* (`TestMode`) telah dihapus dari form UI. Setiap pendaftaran sesi uji secara otomatis ditetapkan ke **Brake Test** (`TestMode.BRAKE`).
+
