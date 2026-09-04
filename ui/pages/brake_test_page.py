@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from core.physics import BrakePeakTracker
+from core.physics import BrakePeakTracker, calculate_braking_torque
 from database.repository import DatabaseRepository
 from exporters.export_service import ExportService
 from ui.components.brake.brake_center_panel import BrakeCenterPanel
@@ -120,17 +120,6 @@ class BrakeTestPage(QWidget):
         row.addLayout(col)
         row.addStretch(1)
 
-        dyno_btn = QPushButton("DYNO TEST")
-        dyno_btn.setObjectName("modeInactive")
-        dyno_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        dyno_btn.clicked.connect(lambda: self.mode_switch_requested.emit("dyno"))
-        brake_btn = QPushButton("BRAKE TEST")
-        brake_btn.setObjectName("modeActive")
-        brake_btn.setEnabled(False)
-        row.addWidget(dyno_btn)
-        row.addWidget(brake_btn)
-        row.addSpacing(Spacing.MD)
-
         self._status_badge = QLabel("● IDLE")
         self._status_badge.setObjectName("statusIdle")
         row.addWidget(self._status_badge)
@@ -149,6 +138,7 @@ class BrakeTestPage(QWidget):
             on_receipt_slot=self._on_print_receipt,
         )
         self._eval_panel = BrakeEvalPanel()
+        self._eval_panel.lux_start_requested.connect(self._on_start_lux_test)
 
         row.addWidget(self._vehicle_panel)
         row.addLayout(self._center_panel, 2)
@@ -202,12 +192,26 @@ class BrakeTestPage(QWidget):
             self._center_panel.reset_displays()
         self._sim_t = 0.0
         self._phase4_start = None
+        target_spd = self._eval_panel.get_target_speed()
         self._peak = BrakePeakTracker(
             session_id=self._session_id or 0,
             vehicle_weight_kg=self._vehicle_weight_kg,
+            target_speed_kmh=target_spd,
         )
         self._timer.start()
         self._apply_state(_State.RUNNING)
+
+    def _on_start_lux_test(self) -> None:
+        """Picu pengujian intensitas lampu mandiri."""
+        if self._peak is not None:
+            res = self._peak.get_result()
+            self._eval_panel.refresh_eval_panel(res)
+        else:
+            QMessageBox.information(
+                self,
+                "Uji Lampu",
+                f"Pengujian intensitas cahaya lampu aktif.\nHasil terdeteksi: {_LUX_CONST:,.0f} Lux (LULUS).",
+            )
 
     def _on_reset(self) -> None:
         self._timer.stop()
@@ -313,6 +317,9 @@ class BrakeTestPage(QWidget):
         self._sim_t += _TICK_MS / 1000.0
         t = self._sim_t
 
+        target_spd = self._eval_panel.get_target_speed()
+        max_rpm    = int(target_spd * 40.0)
+
         roller_rpm:      int   = 0
         speed_kmh:       float = 0.0
         braking_force_n: float = 0.0
@@ -321,17 +328,17 @@ class BrakeTestPage(QWidget):
 
         if t <= _PHASE1_END:
             ratio       = t / _PHASE1_END
-            speed_kmh   = 50.0 * ratio
-            roller_rpm  = int(2000 * ratio)
+            speed_kmh   = target_spd * ratio
+            roller_rpm  = int(max_rpm * ratio)
             self._vehicle_panel.set_cycle_step(0)
         elif t <= _PHASE2_END:
-            speed_kmh  = 50.0
-            roller_rpm = 2000
+            speed_kmh  = target_spd
+            roller_rpm = max_rpm
             self._vehicle_panel.set_cycle_step(1)
         elif t <= _PHASE3_END:
             ratio           = (t - _PHASE2_END) / (_PHASE3_END - _PHASE2_END)
-            speed_kmh       = 50.0 * (1.0 - ratio)
-            roller_rpm      = int(2000 * (1.0 - ratio))
+            speed_kmh       = target_spd * (1.0 - ratio)
+            roller_rpm      = int(max_rpm * (1.0 - ratio))
             braking_force_n = 2800.0 * ratio
             braking_time_s  = 3.0 * ratio
             is_pedal        = True
@@ -347,21 +354,24 @@ class BrakeTestPage(QWidget):
             if self._phase4_start is None:
                 self._phase4_start = t
             elif t - self._phase4_start >= _PHASE4_HOLD:
-                self._peak.update(
-                    roller_rpm=roller_rpm,
-                    braking_force_n=braking_force_n,
-                    braking_time_s=braking_time_s,
-                    lux_intensity=_LUX_CONST,
-                    running_time_s=t,
-                    speed_kmh=speed_kmh,
-                    is_pedal_pressed=is_pedal,
-                )
+                braking_torque_nm = calculate_braking_torque(braking_force_n)
+                if self._peak is not None:
+                    self._peak.update(
+                        roller_rpm=roller_rpm,
+                        braking_force_n=braking_force_n,
+                        braking_time_s=braking_time_s,
+                        lux_intensity=_LUX_CONST,
+                        running_time_s=t,
+                        speed_kmh=speed_kmh,
+                        is_pedal_pressed=is_pedal,
+                    )
                 self._center_panel.update_displays(
-                    speed_kmh, braking_force_n, braking_time_s, _LUX_CONST, t
+                    speed_kmh, roller_rpm, braking_force_n, braking_torque_nm, braking_time_s, _LUX_CONST, t
                 )
                 self._auto_stop()
                 return
 
+        braking_torque_nm = calculate_braking_torque(braking_force_n)
         if self._peak is not None:
             self._peak.update(
                 roller_rpm=roller_rpm,
@@ -373,4 +383,6 @@ class BrakeTestPage(QWidget):
                 is_pedal_pressed=is_pedal,
             )
         self._chart.append_data(t, braking_force_n)
-        self._center_panel.update_displays(speed_kmh, braking_force_n, braking_time_s, _LUX_CONST, t)
+        self._center_panel.update_displays(
+            speed_kmh, roller_rpm, braking_force_n, braking_torque_nm, braking_time_s, _LUX_CONST, t
+        )

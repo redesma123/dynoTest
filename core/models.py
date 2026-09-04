@@ -48,10 +48,12 @@ class BrakeTelemetry:
     """Realtime telemetry packet from Brake & Lux test bench."""
     roller_rpm: int = 0
     braking_force_n: float = 0.0
+    braking_torque_nm: float = 0.0
     braking_time_s: float = 0.0
     lux_intensity: float = 0.0
     running_time_s: float = 0.0
     speed_kmh: float = 0.0
+    target_speed_kmh: float = 60.0
     is_pedal_pressed: bool = False
     is_test_active: bool = False
 
@@ -73,7 +75,9 @@ class DynoResult:
 class BrakeResult:
     session_id: int
     initial_speed_kmh: float = 0.0
+    target_speed_kmh: float = 60.0
     peak_braking_force_n: float = 0.0
+    peak_braking_torque_nm: float = 0.0
     braking_time_s: float = 0.0
     total_running_time_s: float = 0.0
     lux_intensity: float = 0.0

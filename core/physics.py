@@ -39,6 +39,16 @@ def calculate_braking_efficiency(total_braking_force_n: float, vehicle_weight_kg
     return round(efficiency, 2)
 
 
+def calculate_braking_torque(braking_force_n: float, roller_radius_m: float = 0.15) -> float:
+    """
+    Menghitung Torsi Pengereman (Nm) dari Gaya Rem (N) dan Radius Roller (m).
+    Formula: Torque (Nm) = Braking Force (N) * Roller Radius (m)
+    """
+    if braking_force_n <= 0 or roller_radius_m <= 0:
+        return 0.0
+    return round(braking_force_n * roller_radius_m, 2)
+
+
 def evaluate_brake_pass(efficiency_pct: float, threshold: float = MIN_BRAKE_EFFICIENCY_PCT) -> EvaluationStatus:
     """Menentukan status kelulusan rem berdasarkan ambang batas efisiensi."""
     return EvaluationStatus.PASS if efficiency_pct >= threshold else EvaluationStatus.FAIL
@@ -118,11 +128,13 @@ class BrakePeakTracker:
     """
     Real-time peak detector and telemetry accumulator for Brake & Lux test runs.
     """
-    def __init__(self, session_id: int, vehicle_weight_kg: float):
+    def __init__(self, session_id: int, vehicle_weight_kg: float, target_speed_kmh: float = 60.0):
         self.session_id = session_id
         self.vehicle_weight_kg = vehicle_weight_kg
+        self.target_speed_kmh = target_speed_kmh
         self.initial_speed_kmh: float = 0.0
         self.peak_braking_force_n: float = 0.0
+        self.peak_braking_torque_nm: float = 0.0
         self.max_braking_time_s: float = 0.0
         self.max_running_time_s: float = 0.0
         self.latest_lux_intensity: float = 0.0
@@ -147,6 +159,7 @@ class BrakePeakTracker:
 
         if braking_force_n > self.peak_braking_force_n:
             self.peak_braking_force_n = float(braking_force_n)
+            self.peak_braking_torque_nm = calculate_braking_torque(self.peak_braking_force_n)
 
         if braking_time_s > self.max_braking_time_s:
             self.max_braking_time_s = float(braking_time_s)
@@ -157,10 +170,13 @@ class BrakePeakTracker:
         if lux_intensity > 0:
             self.latest_lux_intensity = float(lux_intensity)
 
+        torque_nm = calculate_braking_torque(braking_force_n)
+
         self.time_series.append({
             "t": round(running_time_s, 2),
             "roller_rpm": roller_rpm,
             "force_n": round(braking_force_n, 1),
+            "torque_nm": round(torque_nm, 1),
             "brake_t": round(braking_time_s, 2),
             "lux": round(lux_intensity, 0),
             "speed": round(speed_kmh, 1),
@@ -176,7 +192,9 @@ class BrakePeakTracker:
         return BrakeResult(
             session_id=self.session_id,
             initial_speed_kmh=round(self.initial_speed_kmh, 1),
+            target_speed_kmh=round(self.target_speed_kmh, 1),
             peak_braking_force_n=round(self.peak_braking_force_n, 1),
+            peak_braking_torque_nm=round(self.peak_braking_torque_nm, 1),
             braking_time_s=round(self.max_braking_time_s, 2),
             total_running_time_s=round(self.max_running_time_s, 2),
             lux_intensity=round(self.latest_lux_intensity, 1),

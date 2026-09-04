@@ -10,7 +10,7 @@ from database.connection import DatabaseManager
 from database.repository import DatabaseRepository
 from ui.navigation import NAV_TABS
 from ui.main_window import MainWindow
-from ui.pages import DynoTestPage, BrakeTestPage, SessionEntryPage, HistoryPage
+from ui.pages import BrakeTestPage, SessionEntryPage, HistoryPage
 from core.models import TestMode, TestSession, Vehicle
 
 
@@ -30,7 +30,10 @@ def temp_repo():
     repo = DatabaseRepository(db)
     yield repo
     if os.path.exists(path):
-        os.unlink(path)
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 def test_nav_tabs_structure():
@@ -43,7 +46,7 @@ def test_nav_tabs_structure():
 
 
 def test_main_window_navigation_and_switching(qapp, temp_repo):
-    """Pengujian alur navigasi MainWindow, sub-mode switching, dan pencegahan switch saat running."""
+    """Pengujian alur navigasi MainWindow langsung mengarah ke BrakeTestPage."""
     win = MainWindow(temp_repo)
 
     # 1. Pastikan tab navigasi top bar sinkron
@@ -52,57 +55,26 @@ def test_main_window_navigation_and_switching(qapp, temp_repo):
 
     win.show()
 
-    # 2. Pindah ke tab Test -> secara default menampilkan DynoTestPage
+    # 2. Pindah ke tab Test -> secara default menampilkan BrakeTestPage
     win.top_nav.tab_requested.emit("test")
-    assert isinstance(win.stack.currentWidget(), DynoTestPage)
-    assert not win.top_nav.isHidden()
-
-    # 3. Klik tombol switch ke Brake Test dari header
-    win.dyno_test_page.mode_switch_requested.emit("brake")
     assert isinstance(win.stack.currentWidget(), BrakeTestPage)
-    assert win._current_test_submode == "brake"
-
-    # 4. Klik tombol switch kembali ke Dyno Test dari header
-    win.brake_test_page.mode_switch_requested.emit("dyno")
-    assert isinstance(win.stack.currentWidget(), DynoTestPage)
-    assert win._current_test_submode == "dyno"
-
-    # 5. Uji pencegahan switch saat pengujian sedang RUNNING
-    from ui.pages.dyno_test_page import _State
-    win.dyno_test_page._state = _State.RUNNING
-    win.dyno_test_page.mode_switch_requested.emit("brake")
-    # Tetap di DynoTestPage karena sedang RUNNING
-    assert isinstance(win.stack.currentWidget(), DynoTestPage)
-    assert win._current_test_submode == "dyno"
-
-    # Hentikan state running
-    win.dyno_test_page._state = _State.IDLE
+    assert not win.top_nav.isHidden()
     win.close()
 
 
 def test_session_started_routing(qapp, temp_repo):
-    """Memastikan session baru diarahkan ke sub-mode yang sesuai dengan TestMode."""
+    """Memastikan session baru diarahkan langsung ke BrakeTestPage."""
     win = MainWindow(temp_repo)
 
     # Buat data kendaraan dan session
     temp_repo.save_vehicle(Vehicle(vin="VIN123", test_number="UJI001"))
-    dyno_sess_id = temp_repo.create_test_session(
-        TestSession(vin="VIN123", inspector_name="Budi", test_mode=TestMode.DYNO)
-    )
     brake_sess_id = temp_repo.create_test_session(
         TestSession(vin="VIN123", inspector_name="Budi", test_mode=TestMode.BRAKE)
     )
 
-    # Jalankan session dyno
-    win._on_session_started(dyno_sess_id)
-    assert isinstance(win.stack.currentWidget(), DynoTestPage)
-    assert win._current_test_submode == "dyno"
-    assert win.dyno_test_page._session_id == dyno_sess_id
-
     # Jalankan session brake
     win._on_session_started(brake_sess_id)
     assert isinstance(win.stack.currentWidget(), BrakeTestPage)
-    assert win._current_test_submode == "brake"
     assert win.brake_test_page._session_id == brake_sess_id
 
     win.close()

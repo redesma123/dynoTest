@@ -160,35 +160,57 @@ def get_widget_qss(c, spacing, font_mono: str, min_touch_target: int) -> str:
     }}
 
     /* ── BrakeTestPage: evaluasi PASS / FAIL / PENDING badges ── */
-    QLabel#passLabel {{
-        background-color: {c.SUCCESS_BG};
-        color: {c.ACCENT_SUCCESS};
-        border: 1px solid {c.SUCCESS_BORDER};
-        font-size: 13px;
+    QLabel#passLabel, QLabel#passLabelHero {{
+        background-color: {c.ACCENT_SUCCESS};
+        color: {c.TEXT_ON_DARK};
+        border: 2px solid #047857;
+        font-size: 14px;
         font-weight: 700;
-        border-radius: 6px;
-        padding: {spacing.XS}px {spacing.SM}px;
-        min-height: {min_touch_target - 16}px;
+        border-radius: 8px;
+        padding: 8px 12px;
+        min-height: 38px;
     }}
-    QLabel#failLabel {{
-        background-color: {c.DANGER_BG};
-        color: {c.ACCENT_DANGER};
-        border: 1px solid {c.DANGER_BORDER};
-        font-size: 13px;
+    QLabel#failLabel, QLabel#failLabelHero {{
+        background-color: {c.ACCENT_DANGER};
+        color: {c.TEXT_ON_DARK};
+        border: 2px solid #B91C1C;
+        font-size: 14px;
         font-weight: 700;
-        border-radius: 6px;
-        padding: {spacing.XS}px {spacing.SM}px;
-        min-height: {min_touch_target - 16}px;
+        border-radius: 8px;
+        padding: 8px 12px;
+        min-height: 38px;
     }}
-    QLabel#pendingLabel {{
+    QLabel#pendingLabel, QLabel#pendingLabelHero {{
         background-color: {c.BG_SURFACE_ELEVATED};
         color: {c.TEXT_SECONDARY};
         border: 1px solid {c.BORDER_SUBTLE};
         font-size: 13px;
         font-weight: 700;
+        border-radius: 8px;
+        padding: 6px 10px;
+        min-height: 34px;
+    }}
+
+    QPushButton#luxButton {{
+        background-color: #D97706;
+        color: {c.TEXT_ON_DARK};
+        font-size: 12px;
+        font-weight: 700;
+        border: none;
         border-radius: 6px;
-        padding: {spacing.XS}px {spacing.SM}px;
-        min-height: {min_touch_target - 16}px;
+        padding: 6px 12px;
+        min-height: 34px;
+    }}
+    QPushButton#luxButton:hover {{
+        background-color: #B45309;
+    }}
+    QPushButton#luxButton:pressed {{
+        background-color: #92400E;
+    }}
+    QPushButton#luxButton:disabled {{
+        background-color: {c.BG_SURFACE_ELEVATED};
+        color: {c.TEXT_UNIT_ON_DARK};
+        border: 1px solid {c.BORDER_SUBTLE};
     }}
 
     /* ── BrakeTestPage: siklus indicator labels ── */

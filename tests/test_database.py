@@ -21,7 +21,10 @@ def temp_repo():
     repo = DatabaseRepository(db_mgr)
     yield repo
     if os.path.exists(path):
-        os.remove(path)
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
 
 def test_vehicle_crud(temp_repo):

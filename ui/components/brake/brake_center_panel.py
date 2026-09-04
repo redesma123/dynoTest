@@ -28,17 +28,21 @@ class BrakeCenterPanel(QVBoxLayout):
         g_row = QHBoxLayout()
         g_row.setSpacing(Spacing.MD)
         self.speed_gauge = CircularGaugeWidget("ROLLER KECEPATAN", "KM/H", 0, 80, 0.70, 0.90)
-        self.force_gauge = CircularGaugeWidget("GAYA REM", "N", 0, 10_000, 0.50, 0.85)
+        self.rpm_gauge   = CircularGaugeWidget("ROLLER RPM", "RPM", 0, 3000, 0.75, 0.90)
         g_row.addWidget(self.speed_gauge)
-        g_row.addWidget(self.force_gauge)
+        g_row.addWidget(self.rpm_gauge)
         self.addLayout(g_row)
 
         b_row = QHBoxLayout()
         b_row.setSpacing(Spacing.SM)
-        self.wkt_box, self.wkt_val = create_metric_box("WAKTU REM",  "Detik")
-        self.lux_box, self.lux_val = create_metric_box("LUX METER",  "Lux")
-        self.run_box, self.run_val = create_metric_box("RUN TIME",   "s")
+        self.wkt_box, self.wkt_val = create_metric_box("WAKTU REM", "s")
+        self.trq_box, self.trq_val = create_metric_box("TORSI REM", "Nm")
+        self.frc_box, self.frc_val = create_metric_box("GAYA REM", "N")
+        self.lux_box, self.lux_val = create_metric_box("LUX METER", "Lux")
+        self.run_box, self.run_val = create_metric_box("RUN TIME", "s")
         b_row.addWidget(self.wkt_box)
+        b_row.addWidget(self.trq_box)
+        b_row.addWidget(self.frc_box)
         b_row.addWidget(self.lux_box)
         b_row.addWidget(self.run_box)
         self.addLayout(b_row)
@@ -62,17 +66,28 @@ class BrakeCenterPanel(QVBoxLayout):
         self.addLayout(btn_row)
 
     def update_displays(
-        self, speed_kmh: float, braking_force_n: float, braking_time_s: float, lux: float, run_time: float
+        self,
+        speed_kmh: float,
+        roller_rpm: int,
+        braking_force_n: float,
+        braking_torque_nm: float,
+        braking_time_s: float,
+        lux: float,
+        run_time: float,
     ) -> None:
         self.speed_gauge.set_value(speed_kmh)
-        self.force_gauge.set_value(braking_force_n)
+        self.rpm_gauge.set_value(roller_rpm)
         self.wkt_val.setText(f"{braking_time_s:.2f}")
+        self.trq_val.setText(f"{braking_torque_nm:.1f}")
+        self.frc_val.setText(f"{braking_force_n:,.0f}")
         self.lux_val.setText(f"{lux:,.0f}")
         self.run_val.setText(f"{run_time:.1f}")
 
     def reset_displays(self) -> None:
         self.speed_gauge.set_value(0)
-        self.force_gauge.set_value(0)
+        self.rpm_gauge.set_value(0)
         self.wkt_val.setText("0.00")
+        self.trq_val.setText("0.0")
+        self.frc_val.setText("0")
         self.lux_val.setText("0")
         self.run_val.setText("0.0")
