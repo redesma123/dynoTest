@@ -12,7 +12,16 @@ from ui.styles import Spacing
 class BrakeCenterPanel(QVBoxLayout):
     """Panel Tengah pengujian rem."""
 
-    def __init__(self, on_start_slot, on_reset_slot, parent=None) -> None:
+    def __init__(
+        self,
+        on_start_slot,
+        on_reset_slot,
+        on_save_slot=None,
+        on_excel_slot=None,
+        on_pdf_slot=None,
+        on_receipt_slot=None,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self.setSpacing(Spacing.SM)
 
@@ -35,11 +44,20 @@ class BrakeCenterPanel(QVBoxLayout):
         self.addLayout(b_row)
 
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(Spacing.MD)
-        self.start_btn = create_action_button("▶  START UJI REM", "startButton", on_start_slot)
-        self.reset_btn = create_action_button("↺  RESET CYCLE",   "secondaryButton", on_reset_slot)
+        btn_row.setSpacing(Spacing.SM)
+        self.start_btn   = create_action_button("▶  START",        "startButton",     on_start_slot)
+        self.reset_btn   = create_action_button("■  STOP / RESET", "secondaryButton", on_reset_slot)
+        self.save_btn    = create_action_button("💾  SIMPAN",      "saveButton",      on_save_slot or (lambda: None))
+        self.excel_btn   = create_action_button("📊  EXCEL [F10]", "exportButton",    on_excel_slot or (lambda: None))
+        self.pdf_btn     = create_action_button("📄  PDF [F11]",   "exportButton",    on_pdf_slot or (lambda: None))
+        self.receipt_btn = create_action_button("🧾  STRUK [F12]", "exportButton",    on_receipt_slot or (lambda: None))
+
         btn_row.addWidget(self.start_btn)
         btn_row.addWidget(self.reset_btn)
+        btn_row.addWidget(self.save_btn)
+        btn_row.addWidget(self.excel_btn)
+        btn_row.addWidget(self.pdf_btn)
+        btn_row.addWidget(self.receipt_btn)
         btn_row.addStretch(1)
         self.addLayout(btn_row)
 

@@ -23,7 +23,7 @@ class DynoPeakPanel(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("sidePanel")
-        self.setFixedWidth(175)
+        self.setFixedWidth(220)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)

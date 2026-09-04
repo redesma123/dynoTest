@@ -89,6 +89,14 @@ def get_widget_qss(c, spacing, font_mono: str, min_touch_target: int) -> str:
         padding: 0 {spacing.MD}px;
         min-height: 32px;
     }}
+    QPushButton#modeInactive:hover {{
+        background-color: {c.BG_SURFACE_ELEVATED};
+        color: {c.TEXT_PRIMARY};
+        border-color: {c.ACCENT_PRIMARY};
+    }}
+    QPushButton#modeInactive:pressed {{
+        background-color: {c.BORDER_SUBTLE};
+    }}
 
     /* ── Status badges ── */
     QLabel#statusRunning {{

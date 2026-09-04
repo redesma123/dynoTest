@@ -3,12 +3,15 @@ HistoryPage — Halaman Riwayat & Laporan Pengujian (Shortcut: F4).
 Acuan: DESIGN.md & Mockup Laporan Pengujian.
 """
 
+from datetime import datetime
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -16,6 +19,7 @@ from PyQt6.QtWidgets import (
 )
 
 from database.repository import DatabaseRepository
+from exporters.export_service import ExportService
 from ui.components.common.factory import create_label
 from ui.components.history.history_detail_dialog import HistoryDetailDialog
 from ui.components.history.history_filter_panel import HistoryFilterPanel
@@ -30,6 +34,7 @@ class HistoryPage(QWidget):
         super().__init__(parent)
         self.setObjectName("appRoot")
         self._repo = repository
+        self._export_service = ExportService(self._repo)
 
         self._build_ui()
         self._setup_shortcuts()
@@ -45,13 +50,15 @@ class HistoryPage(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         content = QWidget()
         content.setObjectName("appRoot")
 
         root = QVBoxLayout(content)
-        root.setContentsMargins(Spacing.XXL, Spacing.XL, Spacing.XXL, Spacing.LG)
+        root.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.LG)
         root.setSpacing(Spacing.MD)
+        root.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinimumSize)
 
         # 1. Header Row (Judul + Export buttons)
         root.addLayout(self._build_header())
@@ -89,7 +96,7 @@ class HistoryPage(QWidget):
         pdf_btn.clicked.connect(self._on_export_pdf)
 
         excel_btn = QPushButton("📊  Export Excel  [F10]")
-        excel_btn.setObjectName("saveButton")
+        excel_btn.setObjectName("secondaryButton")
         excel_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         excel_btn.clicked.connect(self._on_export_excel)
 
@@ -120,16 +127,56 @@ class HistoryPage(QWidget):
         dlg.exec()
 
     def _on_print_receipt(self, session_id: int) -> None:
-        """Placeholder — shortcut F12 print thermal receipt."""
-        print(f"[HistoryPage] Cetak struk untuk sesi #{session_id}")
+        session = self._repo.get_test_session(session_id)
+        vehicle = self._repo.get_vehicle_by_vin(session.vin) if session else None
+        dyno_res = self._repo.get_dyno_result_by_session(session_id)
+        brake_res = self._repo.get_brake_result_by_session(session_id)
+
+        txt = self._export_service.format_thermal_receipt_text(session, vehicle, dyno_res, brake_res)
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            f"Simpan Struk Pengujian #{session_id}",
+            f"Struk_Uji_{session_id}.txt",
+            "Text Files (*.txt);;All Files (*)",
+        )
+        if file_path:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(txt)
+            QMessageBox.information(self, "Cetak Struk", f"Struk berhasil diekspor ke:\n{file_path}")
 
     def _on_export_pdf(self) -> None:
-        """Placeholder — shortcut F11 export PDF."""
-        print("[HistoryPage] Trigger Export PDF")
+        rows = getattr(self._table_panel, "_all_rows", [])
+        if not rows:
+            QMessageBox.warning(self, "Export PDF", "Tidak ada data riwayat untuk diekspor.")
+            return
+
+        default_name = f"Laporan_Riwayat_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Riwayat ke PDF", default_name, "PDF Files (*.pdf)"
+        )
+        if file_path:
+            ok = self._export_service.export_history_pdf(file_path, rows)
+            if ok:
+                QMessageBox.information(self, "Export Berhasil", f"Laporan PDF berhasil disimpan ke:\n{file_path}")
+            else:
+                QMessageBox.critical(self, "Export Gagal", "Gagal mengekspor laporan PDF.")
 
     def _on_export_excel(self) -> None:
-        """Placeholder — shortcut F10 export Excel."""
-        print("[HistoryPage] Trigger Export Excel")
+        rows = getattr(self._table_panel, "_all_rows", [])
+        if not rows:
+            QMessageBox.warning(self, "Export Excel", "Tidak ada data riwayat untuk diekspor.")
+            return
+
+        default_name = f"Laporan_Riwayat_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Riwayat ke Excel", default_name, "Excel Files (*.xlsx)"
+        )
+        if file_path:
+            ok = self._export_service.export_history_excel(file_path, rows)
+            if ok:
+                QMessageBox.information(self, "Export Berhasil", f"Laporan Excel berhasil disimpan ke:\n{file_path}")
+            else:
+                QMessageBox.critical(self, "Export Gagal", "Gagal mengekspor laporan Excel.")
 
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence("F10"), self).activated.connect(self._on_export_excel)

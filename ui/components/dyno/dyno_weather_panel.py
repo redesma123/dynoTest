@@ -20,7 +20,7 @@ class DynoWeatherPanel(QFrame):
     def __init__(self, on_tare_slot, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("sidePanel")
-        self.setFixedWidth(175)
+        self.setFixedWidth(220)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)

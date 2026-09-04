@@ -55,7 +55,9 @@ class HistoryTablePanel(QFrame):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setShowGrid(False)
         self.table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.table.setMinimumHeight(240)
+        self.table.setMinimumHeight(160)
+        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(48)
 
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
@@ -63,8 +65,10 @@ class HistoryTablePanel(QFrame):
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(5, 120)
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(6, 110)
 
         layout.addWidget(self.table, 1)
 
@@ -137,24 +141,32 @@ class HistoryTablePanel(QFrame):
             self.table.setItem(row_idx, 4, QTableWidgetItem(str(mode_text)))
 
             # Hasil Badge
+            status_widget = QWidget()
+            status_lay = QHBoxLayout(status_widget)
+            status_lay.setContentsMargins(4, 4, 4, 4)
+            status_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
             status_lbl = QLabel("Selesai")
             status_lbl.setObjectName("passLabel")
             status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.table.setCellWidget(row_idx, 5, status_lbl)
+            status_lay.addWidget(status_lbl)
+            self.table.setCellWidget(row_idx, 5, status_widget)
 
             # Action buttons (Detail 👁 & Print 🖨)
             act_widget = QWidget()
             act_lay = QHBoxLayout(act_widget)
-            act_lay.setContentsMargins(0, 0, 0, 0)
-            act_lay.setSpacing(4)
+            act_lay.setContentsMargins(4, 4, 4, 4)
+            act_lay.setSpacing(6)
+            act_lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             eye_btn = QPushButton("👁")
             eye_btn.setObjectName("actionIconBtn")
+            eye_btn.setFixedSize(32, 32)
             eye_btn.setToolTip("Lihat Detail")
             eye_btn.clicked.connect(lambda _, s=session_id: self.detail_requested.emit(s))
 
             print_btn = QPushButton("🖨")
             print_btn.setObjectName("actionIconBtn")
+            print_btn.setFixedSize(32, 32)
             print_btn.setToolTip("Cetak Struk [F12]")
             print_btn.clicked.connect(lambda _, s=session_id: self.print_requested.emit(s))
 
@@ -168,8 +180,10 @@ class HistoryTablePanel(QFrame):
     def _update_pagination_buttons(self, total_pages: int) -> None:
         while self.pag_layout.count():
             item = self.pag_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            w = item.widget()
+            if w:
+                w.setParent(None)
+                w.deleteLater()
 
         prev_btn = QPushButton("<")
         prev_btn.setObjectName("pageBtn")

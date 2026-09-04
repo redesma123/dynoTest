@@ -14,12 +14,14 @@ RULES.md: maks ~300 baris per file.
 import math
 from enum import Enum, auto
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -28,6 +30,7 @@ from PyQt6.QtWidgets import (
 
 from core.physics import DynoPeakTracker
 from database.repository import DatabaseRepository
+from exporters.export_service import ExportService
 from ui.components.common.factory import create_action_button, create_label, create_metric_box
 from ui.components.common.gauge_widget import CircularGaugeWidget
 from ui.components.common.live_plot import LiveChartWidget
@@ -46,6 +49,8 @@ class _State(Enum):
 
 class DynoTestPage(QWidget):
     """Halaman dashboard Dyno Test."""
+
+    mode_switch_requested = pyqtSignal(str)
 
     def __init__(
         self,
@@ -79,10 +84,12 @@ class DynoTestPage(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         content = QWidget()
         content.setObjectName("appRoot")
         root = QVBoxLayout(content)
+        root.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinimumSize)
         root.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
         root.setSpacing(Spacing.SM)
 
@@ -109,7 +116,8 @@ class DynoTestPage(QWidget):
         dyno_btn.setEnabled(False)
         brake_btn = QPushButton("BRAKE TEST")
         brake_btn.setObjectName("modeInactive")
-        brake_btn.setEnabled(False)
+        brake_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        brake_btn.clicked.connect(lambda: self.mode_switch_requested.emit("brake"))
         row.addWidget(dyno_btn)
         row.addWidget(brake_btn)
         row.addSpacing(Spacing.MD)
@@ -153,13 +161,19 @@ class DynoTestPage(QWidget):
         col.addLayout(b_row)
 
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(Spacing.MD)
+        btn_row.setSpacing(Spacing.SM)
         self._start_btn = create_action_button("▶  START",        "startButton", self._on_start)
         self._stop_btn  = create_action_button("■  STOP",         "stopButton",  self._on_stop)
-        self._save_btn  = create_action_button("💾  SIMPAN DATA", "saveButton",  self._on_save)
+        self._save_btn  = create_action_button("💾  SIMPAN",      "saveButton",  self._on_save)
+        self._export_excel_btn = create_action_button("📊  EXCEL [F10]", "exportButton", self._on_export_excel)
+        self._export_pdf_btn   = create_action_button("📄  PDF [F11]",   "exportButton", self._on_export_pdf)
+        self._export_receipt_btn = create_action_button("🧾  STRUK [F12]", "exportButton", self._on_print_receipt)
         btn_row.addWidget(self._start_btn)
         btn_row.addWidget(self._stop_btn)
         btn_row.addWidget(self._save_btn)
+        btn_row.addWidget(self._export_excel_btn)
+        btn_row.addWidget(self._export_pdf_btn)
+        btn_row.addWidget(self._export_receipt_btn)
         btn_row.addStretch(1)
         col.addLayout(btn_row)
         return col
@@ -167,12 +181,13 @@ class DynoTestPage(QWidget):
     def _build_chart_card(self) -> QFrame:
         card = QFrame()
         card.setObjectName("tableCard")
+        card.setFixedHeight(272)
         lay = QVBoxLayout(card)
         lay.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
         lay.setSpacing(Spacing.XS)
         lay.addWidget(create_label("Power / Torque Curve (Real-time)", "historyHeader"))
         self._chart = LiveChartWidget()
-        self._chart.setMinimumHeight(210)
+        self._chart.setFixedHeight(230)
         lay.addWidget(self._chart)
         return card
 
@@ -184,7 +199,11 @@ class DynoTestPage(QWidget):
 
         self._start_btn.setEnabled(is_idle or is_stopped)
         self._stop_btn.setEnabled(is_running)
-        self._save_btn.setEnabled(is_stopped and self._session_id is not None)
+        has_result = is_stopped and (self._peak is not None)
+        self._save_btn.setEnabled(has_result and self._session_id is not None)
+        self._export_excel_btn.setEnabled(has_result)
+        self._export_pdf_btn.setEnabled(has_result)
+        self._export_receipt_btn.setEnabled(has_result)
 
         if is_running:
             self._status_badge.setText("● RUNNING")
@@ -215,14 +234,78 @@ class DynoTestPage(QWidget):
             return
         try:
             self._repo.save_dyno_result(self._peak.get_result())
+            QMessageBox.information(self, "Simpan Data", "Data Dyno Test berhasil disimpan.")
         except Exception as exc:  # noqa: BLE001
             print(f"[DynoTestPage] Gagal simpan: {exc}")
+            QMessageBox.critical(self, "Simpan Data", f"Gagal menyimpan data: {exc}")
+
+    def _on_export_excel(self) -> None:
+        if self._peak is None:
+            QMessageBox.warning(self, "Export Excel", "Belum ada hasil uji untuk diekspor.")
+            return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Dyno Test ke Excel",
+            f"Dyno_Test_{self._session_id or 'Result'}.xlsx",
+            "Excel Files (*.xlsx)",
+        )
+        if file_path:
+            exporter = ExportService(self._repo)
+            ok = exporter.export_dyno_excel(file_path, self._peak.get_result())
+            if ok:
+                QMessageBox.information(self, "Export Berhasil", f"Data berhasil diekspor ke:\n{file_path}")
+            else:
+                QMessageBox.critical(self, "Export Gagal", "Gagal mengekspor data ke Excel.")
+
+    def _on_export_pdf(self) -> None:
+        if self._peak is None:
+            QMessageBox.warning(self, "Export PDF", "Belum ada hasil uji untuk diekspor.")
+            return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Dyno Test ke PDF",
+            f"Dyno_Test_{self._session_id or 'Result'}.pdf",
+            "PDF Files (*.pdf)",
+        )
+        if file_path:
+            exporter = ExportService(self._repo)
+            ok = exporter.export_dyno_pdf(file_path, self._peak.get_result())
+            if ok:
+                QMessageBox.information(self, "Export Berhasil", f"Laporan PDF berhasil disimpan ke:\n{file_path}")
+            else:
+                QMessageBox.critical(self, "Export Gagal", "Gagal mengekspor laporan ke PDF.")
+
+    def _on_print_receipt(self) -> None:
+        if self._peak is None:
+            QMessageBox.warning(self, "Cetak Struk", "Belum ada hasil uji untuk dicetak.")
+            return
+        session = self._repo.get_test_session(self._session_id) if self._session_id else None
+        vehicle = self._repo.get_vehicle_by_vin(session.vin) if session else None
+        exporter = ExportService(self._repo)
+        txt = exporter.format_thermal_receipt_text(
+            session=session,
+            vehicle=vehicle,
+            dyno_result=self._peak.get_result(),
+        )
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            f"Simpan Struk Pengujian Dyno #{self._session_id or 'Result'}",
+            f"Struk_Dyno_{self._session_id or 'Result'}.txt",
+            "Text Files (*.txt);;All Files (*)",
+        )
+        if file_path:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(txt)
+            QMessageBox.information(self, "Cetak Struk", f"Struk berhasil diekspor ke:\n{file_path}")
 
     def _on_tare(self) -> None:
         """Placeholder — kirim coil M2 ke Modbus saat ModbusWorker tersedia."""
 
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence("F9"), self).activated.connect(self._on_tare)
+        QShortcut(QKeySequence("F10"), self).activated.connect(self._on_export_excel)
+        QShortcut(QKeySequence("F11"), self).activated.connect(self._on_export_pdf)
+        QShortcut(QKeySequence("F12"), self).activated.connect(self._on_print_receipt)
         QShortcut(QKeySequence("Space"), self).activated.connect(
             lambda: self._on_stop() if self._state == _State.RUNNING else self._on_start()
         )

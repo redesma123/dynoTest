@@ -47,12 +47,15 @@ class SessionEntryPage(QWidget):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
         content = QWidget()
         content.setObjectName("appRoot")
 
         root = QVBoxLayout(content)
-        root.setContentsMargins(Spacing.XXL, Spacing.XL, Spacing.XXL, Spacing.LG)
-        root.setSpacing(Spacing.LG)
+        root.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinimumSize)
+        root.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
+        root.setSpacing(Spacing.MD)
 
         title = QLabel("Registrasi Pengujian Kendaraan (KIR / Dyno)")
         title.setObjectName("pageTitle")
@@ -104,6 +107,8 @@ class SessionEntryPage(QWidget):
         self.history_table.setShowGrid(False)
         self.history_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.history_table.setFixedHeight(180)
+        self.history_table.verticalHeader().setVisible(False)
+        self.history_table.verticalHeader().setDefaultSectionSize(40)
 
         header = self.history_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)

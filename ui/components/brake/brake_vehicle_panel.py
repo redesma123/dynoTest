@@ -14,7 +14,7 @@ class BrakeVehiclePanel(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("sidePanel")
-        self.setFixedWidth(185)
+        self.setFixedWidth(220)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)

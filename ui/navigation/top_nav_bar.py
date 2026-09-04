@@ -11,10 +11,8 @@ from ui.styles import Spacing
 
 NAV_TABS = [
     ("registrasi", "Registrasi", "F1"),
-    ("dyno", "Dyno Test", "F2"),
-    ("brake", "Brake Test", "F3"),
-    ("riwayat", "Riwayat", "F4"),
-    ("setting", "Setting", "F5"),
+    ("test", "Test", "F2"),
+    ("riwayat", "Riwayat", "F3"),
 ]
 
 

@@ -15,7 +15,7 @@ def main() -> None:
 
     app = QApplication(sys.argv)
     window = MainWindow(repository)
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())
 
 

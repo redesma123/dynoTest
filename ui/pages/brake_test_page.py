@@ -5,12 +5,14 @@ RULES.md: maks ~300 baris per file.
 
 from enum import Enum, auto
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -19,6 +21,7 @@ from PyQt6.QtWidgets import (
 
 from core.physics import BrakePeakTracker
 from database.repository import DatabaseRepository
+from exporters.export_service import ExportService
 from ui.components.brake.brake_center_panel import BrakeCenterPanel
 from ui.components.brake.brake_eval_panel import BrakeEvalPanel
 from ui.components.brake.brake_vehicle_panel import BrakeVehiclePanel
@@ -43,6 +46,8 @@ class _State(Enum):
 
 class BrakeTestPage(QWidget):
     """Halaman dashboard Brake Test."""
+
+    mode_switch_requested = pyqtSignal(str)
 
     def __init__(
         self,
@@ -88,10 +93,12 @@ class BrakeTestPage(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         content = QWidget()
         content.setObjectName("appRoot")
         root = QVBoxLayout(content)
+        root.setSizeConstraint(QVBoxLayout.SizeConstraint.SetMinimumSize)
         root.setContentsMargins(Spacing.LG, Spacing.MD, Spacing.LG, Spacing.MD)
         root.setSpacing(Spacing.SM)
 
@@ -115,7 +122,8 @@ class BrakeTestPage(QWidget):
 
         dyno_btn = QPushButton("DYNO TEST")
         dyno_btn.setObjectName("modeInactive")
-        dyno_btn.setEnabled(False)
+        dyno_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        dyno_btn.clicked.connect(lambda: self.mode_switch_requested.emit("dyno"))
         brake_btn = QPushButton("BRAKE TEST")
         brake_btn.setObjectName("modeActive")
         brake_btn.setEnabled(False)
@@ -123,7 +131,7 @@ class BrakeTestPage(QWidget):
         row.addWidget(brake_btn)
         row.addSpacing(Spacing.MD)
 
-        self._status_badge = QLabel("● MENUNGGU")
+        self._status_badge = QLabel("● IDLE")
         self._status_badge.setObjectName("statusIdle")
         row.addWidget(self._status_badge)
         return row
@@ -132,8 +140,15 @@ class BrakeTestPage(QWidget):
         row = QHBoxLayout()
         row.setSpacing(Spacing.MD)
         self._vehicle_panel = BrakeVehiclePanel()
-        self._center_panel  = BrakeCenterPanel(on_start_slot=self._on_start, on_reset_slot=self._on_reset)
-        self._eval_panel     = BrakeEvalPanel()
+        self._center_panel  = BrakeCenterPanel(
+            on_start_slot=self._on_start,
+            on_reset_slot=self._on_reset,
+            on_save_slot=self._on_save,
+            on_excel_slot=self._on_export_excel,
+            on_pdf_slot=self._on_export_pdf,
+            on_receipt_slot=self._on_print_receipt,
+        )
+        self._eval_panel = BrakeEvalPanel()
 
         row.addWidget(self._vehicle_panel)
         row.addLayout(self._center_panel, 2)
@@ -143,12 +158,13 @@ class BrakeTestPage(QWidget):
     def _build_chart_card(self) -> QFrame:
         card = QFrame()
         card.setObjectName("tableCard")
+        card.setFixedHeight(272)
         lay = QVBoxLayout(card)
         lay.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
         lay.setSpacing(Spacing.XS)
         lay.addWidget(create_label("Gaya Pengereman vs Waktu (Real-time)", "historyHeader"))
         self._chart = BrakeChartWidget()
-        self._chart.setMinimumHeight(210)
+        self._chart.setFixedHeight(230)
         lay.addWidget(self._chart)
         return card
 
@@ -160,12 +176,17 @@ class BrakeTestPage(QWidget):
 
         self._center_panel.start_btn.setEnabled(is_idle or is_stopped)
         self._center_panel.reset_btn.setEnabled(is_running or is_stopped)
+        has_result = is_stopped and (self._peak is not None)
+        self._center_panel.save_btn.setEnabled(has_result and self._session_id is not None)
+        self._center_panel.excel_btn.setEnabled(has_result)
+        self._center_panel.pdf_btn.setEnabled(has_result)
+        self._center_panel.receipt_btn.setEnabled(has_result)
 
         if is_running:
-            self._status_badge.setText("● BERJALAN")
+            self._status_badge.setText("● RUNNING")
             self._status_badge.setObjectName("statusRunning")
         else:
-            self._status_badge.setText("● MENUNGGU" if is_idle else "● SELESAI")
+            self._status_badge.setText("● IDLE" if is_idle else "● SELESAI")
             self._status_badge.setObjectName("statusIdle")
 
         self._status_badge.style().unpolish(self._status_badge)
@@ -200,18 +221,83 @@ class BrakeTestPage(QWidget):
         self._chart.set_frozen(True)
         if self._peak is not None:
             result = self._peak.get_result()
-            try:
-                self._repo.save_brake_result(result)
-            except Exception as exc:  # noqa: BLE001
-                print(f"[BrakeTestPage] Gagal simpan: {exc}")
             self._eval_panel.refresh_eval_panel(result)
         self._apply_state(_State.STOPPED)
 
+    def _on_save(self) -> None:
+        if self._peak is None or self._session_id is None:
+            return
+        try:
+            self._repo.save_brake_result(self._peak.get_result())
+            QMessageBox.information(self, "Simpan Data", "Data Brake Test berhasil disimpan.")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[BrakeTestPage] Gagal simpan: {exc}")
+            QMessageBox.critical(self, "Simpan Data", f"Gagal menyimpan data: {exc}")
+
+    def _on_export_excel(self) -> None:
+        if self._peak is None:
+            QMessageBox.warning(self, "Export Excel", "Belum ada hasil uji untuk diekspor.")
+            return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Brake Test ke Excel",
+            f"Brake_Test_{self._session_id or 'Result'}.xlsx",
+            "Excel Files (*.xlsx)",
+        )
+        if file_path:
+            exporter = ExportService(self._repo)
+            ok = exporter.export_brake_excel(file_path, self._peak.get_result())
+            if ok:
+                QMessageBox.information(self, "Export Berhasil", f"Data berhasil diekspor ke:\n{file_path}")
+            else:
+                QMessageBox.critical(self, "Export Gagal", "Gagal mengekspor data ke Excel.")
+
+    def _on_export_pdf(self) -> None:
+        if self._peak is None:
+            QMessageBox.warning(self, "Export PDF", "Belum ada hasil uji untuk diekspor.")
+            return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Brake Test ke PDF",
+            f"Brake_Test_{self._session_id or 'Result'}.pdf",
+            "PDF Files (*.pdf)",
+        )
+        if file_path:
+            exporter = ExportService(self._repo)
+            ok = exporter.export_brake_pdf(file_path, self._peak.get_result())
+            if ok:
+                QMessageBox.information(self, "Export Berhasil", f"Laporan PDF berhasil disimpan ke:\n{file_path}")
+            else:
+                QMessageBox.critical(self, "Export Gagal", "Gagal mengekspor laporan ke PDF.")
+
+    def _on_print_receipt(self) -> None:
+        if self._peak is None:
+            QMessageBox.warning(self, "Cetak Struk", "Belum ada hasil uji untuk dicetak.")
+            return
+        session = self._repo.get_test_session(self._session_id) if self._session_id else None
+        vehicle = self._repo.get_vehicle_by_vin(session.vin) if session else None
+        exporter = ExportService(self._repo)
+        txt = exporter.format_thermal_receipt_text(
+            session=session,
+            vehicle=vehicle,
+            brake_result=self._peak.get_result(),
+        )
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            f"Simpan Struk Pengujian Rem #{self._session_id or 'Result'}",
+            f"Struk_Brake_{self._session_id or 'Result'}.txt",
+            "Text Files (*.txt);;All Files (*)",
+        )
+        if file_path:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(txt)
+            QMessageBox.information(self, "Cetak Struk", f"Struk berhasil diekspor ke:\n{file_path}")
+
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence("F9"),    self).activated.connect(self._on_tare)
-        QShortcut(QKeySequence("F10"),   self).activated.connect(lambda: None)
-        QShortcut(QKeySequence("F11"),   self).activated.connect(lambda: None)
-        QShortcut(QKeySequence("F12"),   self).activated.connect(lambda: None)
+        QShortcut(QKeySequence("F10"),   self).activated.connect(self._on_export_excel)
+        QShortcut(QKeySequence("F11"),   self).activated.connect(self._on_export_pdf)
+        QShortcut(QKeySequence("F12"),   self).activated.connect(self._on_print_receipt)
         QShortcut(QKeySequence("Space"), self).activated.connect(self._on_space)
 
     def _on_space(self) -> None:

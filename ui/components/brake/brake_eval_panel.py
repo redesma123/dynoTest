@@ -16,7 +16,7 @@ class BrakeEvalPanel(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("sidePanel")
-        self.setFixedWidth(210)
+        self.setFixedWidth(220)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
@@ -50,21 +50,7 @@ class BrakeEvalPanel(QFrame):
         self.lux_detail_lbl = QLabel("Intensitas: — Lx")
         self.lux_detail_lbl.setObjectName("weatherRow")
         lay.addWidget(self.lux_detail_lbl)
-
         lay.addStretch(1)
-        lay.addWidget(create_divider())
-
-        # Export buttons (disabled -- ExportService belum diimplementasi)
-        for label in [
-            "CETAK STRUK  [F12]",
-            "EXPORT PDF   [F11]",
-            "EXPORT EXCEL [F10]",
-        ]:
-            btn = QPushButton(label)
-            btn.setObjectName("exportButton")
-            btn.setEnabled(False)
-            btn.setCursor(Qt.CursorShape.ForbiddenCursor)
-            lay.addWidget(btn)
 
     def refresh_eval_panel(self, result) -> None:
         eff    = result.braking_efficiency_pct

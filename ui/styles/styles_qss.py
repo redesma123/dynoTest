@@ -42,10 +42,10 @@ def get_qss_styles(c, spacing, font_ui: str, font_mono: str, min_touch_target: i
     }}
 
     QLabel#sectionTitle {{
-        font-size: 16px;
-        font-weight: 600;
+        font-size: 14px;
+        font-weight: 700;
         color: {c.TEXT_PRIMARY};
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }}
 
     QFrame#divider {{
@@ -60,6 +60,30 @@ def get_qss_styles(c, spacing, font_ui: str, font_mono: str, min_touch_target: i
         font-weight: 500;
         color: {c.TEXT_SECONDARY};
         letter-spacing: 0.5px;
+    }}
+
+    QRadioButton {{
+        color: {c.TEXT_PRIMARY};
+        font-size: 13px;
+        font-weight: 500;
+        spacing: 8px;
+    }}
+
+    QRadioButton::indicator {{
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        border: 1.5px solid {c.BORDER_SUBTLE};
+        background-color: {c.BG_APP};
+    }}
+
+    QRadioButton::indicator:checked {{
+        border: 4px solid {c.BG_SURFACE};
+        background-color: {c.ACCENT_PRIMARY};
+    }}
+
+    QRadioButton::indicator:hover {{
+        border-color: {c.ACCENT_PRIMARY};
     }}
 
     QLineEdit#fieldInput {{
@@ -158,6 +182,12 @@ def get_qss_styles(c, spacing, font_ui: str, font_mono: str, min_touch_target: i
         padding: 10px 6px;
     }}
 
+    QTableCornerButton::section {{
+        background-color: {c.BG_SURFACE};
+        border: none;
+        border-bottom: 1px solid {c.BORDER_SUBTLE};
+    }}
+
     QFrame#topNavBar {{
         background-color: {c.BG_SURFACE};
         border-bottom: 1px solid {c.BORDER_SUBTLE};
@@ -229,6 +259,26 @@ def get_qss_styles(c, spacing, font_ui: str, font_mono: str, min_touch_target: i
         font-size: 13px;
         color: {c.TEXT_SECONDARY};
         padding: {spacing.LG}px;
+    }}
+
+    QScrollBar:vertical {{
+        background-color: transparent;
+        width: 8px;
+        margin: 0px;
+    }}
+    QScrollBar::handle:vertical {{
+        background-color: {c.BORDER_SUBTLE};
+        min-height: 24px;
+        border-radius: 4px;
+    }}
+    QScrollBar::handle:vertical:hover {{
+        background-color: {c.ACCENT_PRIMARY};
+    }}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+        height: 0px;
+    }}
+    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+        background-color: transparent;
     }}
     """
     widgets_qss = get_widget_qss(c, spacing, font_mono, min_touch_target)
