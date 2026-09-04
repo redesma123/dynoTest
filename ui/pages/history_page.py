@@ -6,9 +6,11 @@ Acuan: DESIGN.md & Mockup Laporan Pengujian.
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -16,6 +18,7 @@ from PyQt6.QtWidgets import (
 )
 
 from database.repository import DatabaseRepository
+from services import ExportService
 from ui.components.common.factory import create_label
 from ui.components.history.history_detail_dialog import HistoryDetailDialog
 from ui.components.history.history_filter_panel import HistoryFilterPanel
@@ -30,6 +33,7 @@ class HistoryPage(QWidget):
         super().__init__(parent)
         self.setObjectName("appRoot")
         self._repo = repository
+        self._all_rows: list[dict] = []
 
         self._build_ui()
         self._setup_shortcuts()
@@ -120,16 +124,43 @@ class HistoryPage(QWidget):
         dlg.exec()
 
     def _on_print_receipt(self, session_id: int) -> None:
-        """Placeholder — shortcut F12 print thermal receipt."""
-        print(f"[HistoryPage] Cetak struk untuk sesi #{session_id}")
+        session = self._repo.get_test_session(session_id)
+        if not session:
+            QMessageBox.warning(self, "Peringatan", "Data sesi tidak ditemukan di database.")
+            return
+        vehicle = self._repo.get_vehicle_by_vin(session.vin)
+        out_file = f"Struk_Sesi_{session_id}.txt"
+        if ExportService.print_thermal_receipt(session, vehicle, out_file):
+            QMessageBox.information(self, "Cetak Struk", f"Struk thermal berhasil dicetak/disimpan ke:\n{out_file}")
 
     def _on_export_pdf(self) -> None:
-        """Placeholder — shortcut F11 export PDF."""
-        print("[HistoryPage] Trigger Export PDF")
+        if not hasattr(self, "_all_rows") or not self._all_rows:
+            QMessageBox.warning(self, "Peringatan", "Tidak ada data riwayat pengujian untuk diekspor.")
+            return
+        selected_id = self._table_panel.get_selected_session_id()
+        session_id = selected_id or self._all_rows[0]["id"]
+        session = self._repo.get_test_session(session_id)
+        if not session:
+            QMessageBox.warning(self, "Peringatan", "Data sesi tidak ditemukan di database.")
+            return
+        vehicle = self._repo.get_vehicle_by_vin(session.vin)
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Laporan PDF", f"Laporan_Sesi_{session_id}.pdf", "PDF Files (*.pdf)"
+        )
+        if file_path:
+            if ExportService.export_to_pdf(session, vehicle, file_path):
+                QMessageBox.information(self, "Sukses Ekspor", f"Laporan PDF berhasil disimpan ke:\n{file_path}")
 
     def _on_export_excel(self) -> None:
-        """Placeholder — shortcut F10 export Excel."""
-        print("[HistoryPage] Trigger Export Excel")
+        if not hasattr(self, "_all_rows") or not self._all_rows:
+            QMessageBox.warning(self, "Peringatan", "Tidak ada data riwayat pengujian untuk diekspor.")
+            return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export Data Excel", "Laporan_Riwayat_Pengujian.csv", "CSV Files (*.csv)"
+        )
+        if file_path:
+            if ExportService.export_to_excel(self._all_rows, file_path):
+                QMessageBox.information(self, "Sukses Ekspor", f"Data Excel/CSV berhasil disimpan ke:\n{file_path}")
 
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence("F10"), self).activated.connect(self._on_export_excel)

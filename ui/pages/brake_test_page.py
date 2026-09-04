@@ -24,6 +24,11 @@ from ui.components.brake.brake_eval_panel import BrakeEvalPanel
 from ui.components.brake.brake_vehicle_panel import BrakeVehiclePanel
 from ui.components.common.factory import create_label
 from ui.components.common.live_plot import BrakeChartWidget
+from ui.pages.brake_export_helpers import (
+    export_brake_excel,
+    export_brake_pdf,
+    print_brake_receipt,
+)
 from ui.styles import Spacing
 
 _TICK_MS   = 100
@@ -135,6 +140,10 @@ class BrakeTestPage(QWidget):
         self._center_panel  = BrakeCenterPanel(on_start_slot=self._on_start, on_reset_slot=self._on_reset)
         self._eval_panel     = BrakeEvalPanel()
 
+        self._eval_panel.pdf_requested.connect(self._on_export_pdf)
+        self._eval_panel.excel_requested.connect(self._on_export_excel)
+        self._eval_panel.print_requested.connect(self._on_print_receipt)
+
         row.addWidget(self._vehicle_panel)
         row.addLayout(self._center_panel, 2)
         row.addWidget(self._eval_panel)
@@ -209,10 +218,19 @@ class BrakeTestPage(QWidget):
 
     def _setup_shortcuts(self) -> None:
         QShortcut(QKeySequence("F9"),    self).activated.connect(self._on_tare)
-        QShortcut(QKeySequence("F10"),   self).activated.connect(lambda: None)
-        QShortcut(QKeySequence("F11"),   self).activated.connect(lambda: None)
-        QShortcut(QKeySequence("F12"),   self).activated.connect(lambda: None)
+        QShortcut(QKeySequence("F10"),   self).activated.connect(self._on_export_excel)
+        QShortcut(QKeySequence("F11"),   self).activated.connect(self._on_export_pdf)
+        QShortcut(QKeySequence("F12"),   self).activated.connect(self._on_print_receipt)
         QShortcut(QKeySequence("Space"), self).activated.connect(self._on_space)
+
+    def _on_export_pdf(self) -> None:
+        export_brake_pdf(self, self._repo, self._session_id)
+
+    def _on_export_excel(self) -> None:
+        export_brake_excel(self, self._repo, self._session_id)
+
+    def _on_print_receipt(self) -> None:
+        print_brake_receipt(self, self._repo, self._session_id)
 
     def _on_space(self) -> None:
         if self._state == _State.RUNNING:
@@ -261,30 +279,17 @@ class BrakeTestPage(QWidget):
             if self._phase4_start is None:
                 self._phase4_start = t
             elif t - self._phase4_start >= _PHASE4_HOLD:
-                self._peak.update(
-                    roller_rpm=roller_rpm,
-                    braking_force_n=braking_force_n,
-                    braking_time_s=braking_time_s,
-                    lux_intensity=_LUX_CONST,
-                    running_time_s=t,
-                    speed_kmh=speed_kmh,
-                    is_pedal_pressed=is_pedal,
-                )
-                self._center_panel.update_displays(
-                    speed_kmh, braking_force_n, braking_time_s, _LUX_CONST, t
-                )
+                self._update_tick(t, roller_rpm, speed_kmh, braking_force_n, braking_time_s, is_pedal)
                 self._auto_stop()
                 return
 
+        self._update_tick(t, roller_rpm, speed_kmh, braking_force_n, braking_time_s, is_pedal)
+
+    def _update_tick(self, t: float, rpm: int, speed: float, force: float, btime: float, pedal: bool) -> None:
         if self._peak is not None:
             self._peak.update(
-                roller_rpm=roller_rpm,
-                braking_force_n=braking_force_n,
-                braking_time_s=braking_time_s,
-                lux_intensity=_LUX_CONST,
-                running_time_s=t,
-                speed_kmh=speed_kmh,
-                is_pedal_pressed=is_pedal,
+                roller_rpm=rpm, braking_force_n=force, braking_time_s=btime,
+                lux_intensity=_LUX_CONST, running_time_s=t, speed_kmh=speed, is_pedal_pressed=pedal
             )
-        self._chart.append_data(t, braking_force_n)
-        self._center_panel.update_displays(speed_kmh, braking_force_n, braking_time_s, _LUX_CONST, t)
+        self._chart.append_data(t, force)
+        self._center_panel.update_displays(speed, force, btime, _LUX_CONST, t)

@@ -3,7 +3,7 @@ BrakeEvalPanel — Panel Kanan untuk BrakeTestPage (Evaluasi Hasil & Export).
 Extracted to respect RULES.md §2 (max ~300 lines per file).
 """
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QFrame, QLabel, QPushButton, QVBoxLayout
 from core.models import EvaluationStatus
 from ui.components.common.factory import create_divider, create_label
@@ -12,6 +12,10 @@ from ui.styles import Spacing
 
 class BrakeEvalPanel(QFrame):
     """Panel Evaluasi Hasil dan Tombol Export Laporan."""
+
+    pdf_requested   = pyqtSignal()
+    excel_requested = pyqtSignal()
+    print_requested = pyqtSignal()
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -54,16 +58,19 @@ class BrakeEvalPanel(QFrame):
         lay.addStretch(1)
         lay.addWidget(create_divider())
 
-        # Export buttons (disabled -- ExportService belum diimplementasi)
-        for label in [
-            "CETAK STRUK  [F12]",
-            "EXPORT PDF   [F11]",
-            "EXPORT EXCEL [F10]",
-        ]:
-            btn = QPushButton(label)
+        # Export buttons
+        self.btn_print  = QPushButton("CETAK STRUK  [F12]")
+        self.btn_pdf    = QPushButton("EXPORT PDF   [F11]")
+        self.btn_excel  = QPushButton("EXPORT EXCEL [F10]")
+
+        self.btn_print.clicked.connect(self.print_requested.emit)
+        self.btn_pdf.clicked.connect(self.pdf_requested.emit)
+        self.btn_excel.clicked.connect(self.excel_requested.emit)
+
+        for btn in (self.btn_print, self.btn_pdf, self.btn_excel):
             btn.setObjectName("exportButton")
-            btn.setEnabled(False)
-            btn.setCursor(Qt.CursorShape.ForbiddenCursor)
+            btn.setEnabled(True)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
             lay.addWidget(btn)
 
     def refresh_eval_panel(self, result) -> None:

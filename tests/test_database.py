@@ -13,6 +13,9 @@ from database.connection import DatabaseManager
 from database.repository import DatabaseRepository
 
 
+import gc
+
+
 @pytest.fixture
 def temp_repo():
     fd, path = tempfile.mkstemp(suffix=".db")
@@ -20,8 +23,12 @@ def temp_repo():
     db_mgr = DatabaseManager(path)
     repo = DatabaseRepository(db_mgr)
     yield repo
+    gc.collect()
     if os.path.exists(path):
-        os.remove(path)
+        try:
+            os.remove(path)
+        except OSError:
+            pass
 
 
 def test_vehicle_crud(temp_repo):
