@@ -16,16 +16,11 @@ from PyQt6.QtWidgets import (
 )
 
 from database.repository import DatabaseRepository
+from ui.components.common.factory import create_label
 from ui.components.history.history_detail_dialog import HistoryDetailDialog
 from ui.components.history.history_filter_panel import HistoryFilterPanel
 from ui.components.history.history_table_panel import HistoryTablePanel
 from ui.styles import Spacing
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
 
 
 class HistoryPage(QWidget):
@@ -83,8 +78,8 @@ class HistoryPage(QWidget):
         row = QHBoxLayout()
         col = QVBoxLayout()
         col.setSpacing(2)
-        col.addWidget(_lbl("Laporan Pengujian", "pageTitle"))
-        col.addWidget(_lbl("Lihat, tinjau, dan ekspor hasil pengujian kendaraan.", "pageSubtitle"))
+        col.addWidget(create_label("Laporan Pengujian", "pageTitle"))
+        col.addWidget(create_label("Lihat, tinjau, dan ekspor hasil pengujian kendaraan.", "pageSubtitle"))
         row.addLayout(col)
         row.addStretch(1)
 

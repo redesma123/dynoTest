@@ -18,15 +18,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ui.components.common.factory import create_label
 from ui.styles import Colors, FONT_MONO, Spacing
 
 COLUMNS = ["TANGGAL & WAKTU", "NO. UJI", "NO. RANGKA", "NAMA PENGUJI", "MODE", "HASIL", "AKSI"]
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
 
 
 class HistoryTablePanel(QFrame):
@@ -79,7 +74,7 @@ class HistoryTablePanel(QFrame):
         foot_lay = QHBoxLayout(footer_bar)
         foot_lay.setContentsMargins(Spacing.LG, Spacing.SM, Spacing.LG, Spacing.SM)
 
-        self.info_lbl = _lbl("Showing 0 of 0 entries", "weatherRow")
+        self.info_lbl = create_label("Showing 0 of 0 entries", "weatherRow")
         foot_lay.addWidget(self.info_lbl)
         foot_lay.addStretch(1)
 

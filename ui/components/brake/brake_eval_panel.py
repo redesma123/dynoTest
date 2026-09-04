@@ -6,19 +6,8 @@ Extracted to respect RULES.md §2 (max ~300 lines per file).
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QFrame, QLabel, QPushButton, QVBoxLayout
 from core.models import EvaluationStatus
+from ui.components.common.factory import create_divider, create_label
 from ui.styles import Spacing
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
-
-
-def _divider() -> QFrame:
-    f = QFrame()
-    f.setObjectName("divider")
-    return f
 
 
 class BrakeEvalPanel(QFrame):
@@ -33,11 +22,11 @@ class BrakeEvalPanel(QFrame):
         lay.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         lay.setSpacing(Spacing.SM)
 
-        lay.addWidget(_lbl("EVALUASI HASIL", "sectionTitle"))
-        lay.addWidget(_divider())
+        lay.addWidget(create_label("EVALUASI HASIL", "sectionTitle"))
+        lay.addWidget(create_divider())
 
         # STATUS REM
-        lay.addWidget(_lbl("STATUS REM", "fieldLabel"))
+        lay.addWidget(create_label("STATUS REM", "fieldLabel"))
         self.brake_status_lbl = QLabel("● MENUNGGU")
         self.brake_status_lbl.setObjectName("pendingLabel")
         self.brake_status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -52,7 +41,7 @@ class BrakeEvalPanel(QFrame):
         lay.addSpacing(Spacing.XS)
 
         # STATUS LAMPU
-        lay.addWidget(_lbl("STATUS LAMPU", "fieldLabel"))
+        lay.addWidget(create_label("STATUS LAMPU", "fieldLabel"))
         self.lux_status_lbl = QLabel("● MENUNGGU")
         self.lux_status_lbl.setObjectName("pendingLabel")
         self.lux_status_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -63,7 +52,7 @@ class BrakeEvalPanel(QFrame):
         lay.addWidget(self.lux_detail_lbl)
 
         lay.addStretch(1)
-        lay.addWidget(_divider())
+        lay.addWidget(create_divider())
 
         # Export buttons (disabled -- ExportService belum diimplementasi)
         for label in [

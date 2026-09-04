@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
 
 from core.physics import DynoPeakTracker
 from database.repository import DatabaseRepository
+from ui.components.common.factory import create_action_button, create_label, create_metric_box
 from ui.components.common.gauge_widget import CircularGaugeWidget
 from ui.components.common.live_plot import LiveChartWidget
 from ui.components.dyno.dyno_peak_panel import DynoPeakPanel
@@ -41,40 +42,6 @@ class _State(Enum):
     IDLE    = auto()
     RUNNING = auto()
     STOPPED = auto()
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
-
-
-def _action_btn(text: str, obj_name: str, slot) -> QPushButton:
-    btn = QPushButton(text)
-    btn.setObjectName(obj_name)
-    btn.setCursor(Qt.CursorShape.PointingHandCursor)
-    btn.clicked.connect(slot)
-    return btn
-
-
-def _metric_box(label_text: str, unit: str) -> tuple[QFrame, QLabel]:
-    frame = QFrame()
-    frame.setObjectName("metricBox")
-    lay = QVBoxLayout(frame)
-    lay.setContentsMargins(Spacing.MD, Spacing.SM, Spacing.MD, Spacing.SM)
-    lay.setSpacing(2)
-
-    top = QLabel(f"{label_text}  [{unit}]")
-    top.setObjectName("metricBoxLabel")
-    top.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    lay.addWidget(top)
-
-    val = QLabel("0.00")
-    val.setObjectName("metricBoxValue")
-    val.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    lay.addWidget(val)
-
-    return frame, val
 
 
 class DynoTestPage(QWidget):
@@ -132,8 +99,8 @@ class DynoTestPage(QWidget):
         row = QHBoxLayout()
         col = QVBoxLayout()
         col.setSpacing(2)
-        col.addWidget(_lbl("Modul Dyno Test", "pageTitle"))
-        col.addWidget(_lbl("Live Telemetry & Diagnostics Monitoring", "pageSubtitle"))
+        col.addWidget(create_label("Modul Dyno Test", "pageTitle"))
+        col.addWidget(create_label("Live Telemetry & Diagnostics Monitoring", "pageSubtitle"))
         row.addLayout(col)
         row.addStretch(1)
 
@@ -177,9 +144,9 @@ class DynoTestPage(QWidget):
 
         b_row = QHBoxLayout()
         b_row.setSpacing(Spacing.SM)
-        self._hp_box, self._hp_val = _metric_box("DAYA MESIN", "HP")
-        self._nm_box, self._nm_val = _metric_box("TORSI",      "Nm")
-        self._fw_box, self._fw_val = _metric_box("GAYA RODA",  "N")
+        self._hp_box, self._hp_val = create_metric_box("DAYA MESIN", "HP")
+        self._nm_box, self._nm_val = create_metric_box("TORSI",      "Nm")
+        self._fw_box, self._fw_val = create_metric_box("GAYA RODA",  "N")
         b_row.addWidget(self._hp_box)
         b_row.addWidget(self._nm_box)
         b_row.addWidget(self._fw_box)
@@ -187,9 +154,9 @@ class DynoTestPage(QWidget):
 
         btn_row = QHBoxLayout()
         btn_row.setSpacing(Spacing.MD)
-        self._start_btn = _action_btn("▶  START",        "startButton", self._on_start)
-        self._stop_btn  = _action_btn("■  STOP",         "stopButton",  self._on_stop)
-        self._save_btn  = _action_btn("💾  SIMPAN DATA", "saveButton",  self._on_save)
+        self._start_btn = create_action_button("▶  START",        "startButton", self._on_start)
+        self._stop_btn  = create_action_button("■  STOP",         "stopButton",  self._on_stop)
+        self._save_btn  = create_action_button("💾  SIMPAN DATA", "saveButton",  self._on_save)
         btn_row.addWidget(self._start_btn)
         btn_row.addWidget(self._stop_btn)
         btn_row.addWidget(self._save_btn)
@@ -203,7 +170,7 @@ class DynoTestPage(QWidget):
         lay = QVBoxLayout(card)
         lay.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
         lay.setSpacing(Spacing.XS)
-        lay.addWidget(_lbl("Power / Torque Curve (Real-time)", "historyHeader"))
+        lay.addWidget(create_label("Power / Torque Curve (Real-time)", "historyHeader"))
         self._chart = LiveChartWidget()
         self._chart.setMinimumHeight(210)
         lay.addWidget(self._chart)

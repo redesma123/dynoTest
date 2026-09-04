@@ -22,6 +22,7 @@ from database.repository import DatabaseRepository
 from ui.components.brake.brake_center_panel import BrakeCenterPanel
 from ui.components.brake.brake_eval_panel import BrakeEvalPanel
 from ui.components.brake.brake_vehicle_panel import BrakeVehiclePanel
+from ui.components.common.factory import create_label
 from ui.components.common.live_plot import BrakeChartWidget
 from ui.styles import Spacing
 
@@ -38,12 +39,6 @@ class _State(Enum):
     IDLE    = auto()
     RUNNING = auto()
     STOPPED = auto()
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
 
 
 class BrakeTestPage(QWidget):
@@ -113,8 +108,8 @@ class BrakeTestPage(QWidget):
         row = QHBoxLayout()
         col = QVBoxLayout()
         col.setSpacing(2)
-        col.addWidget(_lbl("Modul Brake Test", "pageTitle"))
-        col.addWidget(_lbl("Pengujian Gaya Rem & Lampu Kendaraan", "pageSubtitle"))
+        col.addWidget(create_label("Modul Brake Test", "pageTitle"))
+        col.addWidget(create_label("Pengujian Gaya Rem & Lampu Kendaraan", "pageSubtitle"))
         row.addLayout(col)
         row.addStretch(1)
 
@@ -151,7 +146,7 @@ class BrakeTestPage(QWidget):
         lay = QVBoxLayout(card)
         lay.setContentsMargins(Spacing.SM, Spacing.SM, Spacing.SM, Spacing.SM)
         lay.setSpacing(Spacing.XS)
-        lay.addWidget(_lbl("Gaya Pengereman vs Waktu (Real-time)", "historyHeader"))
+        lay.addWidget(create_label("Gaya Pengereman vs Waktu (Real-time)", "historyHeader"))
         self._chart = BrakeChartWidget()
         self._chart.setMinimumHeight(210)
         lay.addWidget(self._chart)

@@ -14,13 +14,8 @@ from PyQt6.QtWidgets import (
 )
 
 from database.repository import DatabaseRepository
+from ui.components.common.factory import create_label
 from ui.styles import Colors, Spacing
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
 
 
 def _row(label: str, val: str) -> QHBoxLayout:
@@ -74,7 +69,7 @@ class HistoryDetailDialog(QDialog):
     def _load_data(self) -> None:
         session = self._repo.get_test_session(self._session_id)
         if not session:
-            self.card_lay.addWidget(_lbl("Sesi tidak ditemukan.", "errorLabel"))
+            self.card_lay.addWidget(create_label("Sesi tidak ditemukan.", "errorLabel"))
             return
 
         vehicle = self._repo.get_vehicle_by_vin(session.vin)
@@ -92,7 +87,7 @@ class HistoryDetailDialog(QDialog):
         if session.dyno_result:
             dr = session.dyno_result
             self.card_lay.addSpacing(Spacing.SM)
-            self.card_lay.addWidget(_lbl("HASIL DYNO TEST", "sectionTitle"))
+            self.card_lay.addWidget(create_label("HASIL DYNO TEST", "sectionTitle"))
             self.card_lay.addLayout(_row("Peak Power", f"{dr.max_power_hp:.2f} HP"))
             self.card_lay.addLayout(_row("Peak Torque", f"{dr.max_torque_nm:.1f} Nm"))
             self.card_lay.addLayout(_row("Top Speed", f"{dr.max_speed_kmh:.1f} km/h"))
@@ -100,7 +95,7 @@ class HistoryDetailDialog(QDialog):
         if session.brake_result:
             br = session.brake_result
             self.card_lay.addSpacing(Spacing.SM)
-            self.card_lay.addWidget(_lbl("HASIL BRAKE TEST", "sectionTitle"))
+            self.card_lay.addWidget(create_label("HASIL BRAKE TEST", "sectionTitle"))
             self.card_lay.addLayout(_row("Gaya Rem Puncak", f"{br.peak_braking_force_n:.0f} N"))
             self.card_lay.addLayout(_row("Waktu Rem", f"{br.braking_time_s:.2f} s"))
             self.card_lay.addLayout(_row("Efisiensi Rem", f"{br.braking_efficiency_pct:.1f} %"))

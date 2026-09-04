@@ -13,13 +13,8 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
 )
+from ui.components.common.factory import create_label
 from ui.styles import Colors, Spacing
-
-
-def _lbl(text: str, obj_name: str = "fieldLabel") -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
 
 
 class HistoryFilterPanel(QFrame):
@@ -40,7 +35,7 @@ class HistoryFilterPanel(QFrame):
         # 1. Field No. Uji
         col_uji = QVBoxLayout()
         col_uji.setSpacing(Spacing.XS)
-        col_uji.addWidget(_lbl("No. Uji"))
+        col_uji.addWidget(create_label("No. Uji", "fieldLabel"))
         self.search_input = QLineEdit()
         self.search_input.setObjectName("fieldInput")
         self.search_input.setPlaceholderText("🔍 Cari No. Uji...")
@@ -51,7 +46,7 @@ class HistoryFilterPanel(QFrame):
         # 2. Field Mode
         col_mode = QVBoxLayout()
         col_mode.setSpacing(Spacing.XS)
-        col_mode.addWidget(_lbl("Mode"))
+        col_mode.addWidget(create_label("Mode", "fieldLabel"))
         self.mode_combo = QComboBox()
         self.mode_combo.setObjectName("filterCombo")
         self.mode_combo.addItems(["All Modes", "Dyno Test", "Brake Test", "Combined"])
@@ -62,7 +57,7 @@ class HistoryFilterPanel(QFrame):
         # 3. Field Tanggal
         col_date = QVBoxLayout()
         col_date.setSpacing(Spacing.XS)
-        col_date.addWidget(_lbl("Tanggal"))
+        col_date.addWidget(create_label("Tanggal", "fieldLabel"))
         self.date_input = QLineEdit()
         self.date_input.setObjectName("fieldInput")
         self.date_input.setPlaceholderText("📅 dd-mm-yyyy")
@@ -73,7 +68,7 @@ class HistoryFilterPanel(QFrame):
         # 4. Tombol Filter & Reset
         col_btn = QVBoxLayout()
         col_btn.setSpacing(Spacing.XS)
-        col_btn.addWidget(_lbl(" ", "fieldLabel"))  # spacer label
+        col_btn.addWidget(create_label(" ", "fieldLabel"))  # spacer label
 
         btn_row = QHBoxLayout()
         btn_row.setSpacing(Spacing.SM)

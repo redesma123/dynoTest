@@ -3,35 +3,10 @@ BrakeCenterPanel — Panel Tengah untuk BrakeTestPage (Dual Gauge + Metric Boxes
 Extracted to respect RULES.md §2 (max ~300 lines per file).
 """
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
+from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout
+from ui.components.common.factory import create_action_button, create_metric_box
 from ui.components.common.gauge_widget import CircularGaugeWidget
 from ui.styles import Spacing
-
-
-def _metric_box(label_text: str, unit: str) -> tuple[QFrame, QLabel]:
-    frame = QFrame()
-    frame.setObjectName("metricBox")
-    lay = QVBoxLayout(frame)
-    lay.setContentsMargins(Spacing.MD, Spacing.SM, Spacing.MD, Spacing.SM)
-    lay.setSpacing(2)
-    top = QLabel(f"{label_text}  [{unit}]")
-    top.setObjectName("metricBoxLabel")
-    top.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    lay.addWidget(top)
-    val = QLabel("0.00")
-    val.setObjectName("metricBoxValue")
-    val.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    lay.addWidget(val)
-    return frame, val
-
-
-def _action_btn(text: str, obj_name: str, slot) -> QPushButton:
-    btn = QPushButton(text)
-    btn.setObjectName(obj_name)
-    btn.setCursor(Qt.CursorShape.PointingHandCursor)
-    btn.clicked.connect(slot)
-    return btn
 
 
 class BrakeCenterPanel(QVBoxLayout):
@@ -51,9 +26,9 @@ class BrakeCenterPanel(QVBoxLayout):
 
         b_row = QHBoxLayout()
         b_row.setSpacing(Spacing.SM)
-        self.wkt_box, self.wkt_val = _metric_box("WAKTU REM",  "Detik")
-        self.lux_box, self.lux_val = _metric_box("LUX METER",  "Lux")
-        self.run_box, self.run_val = _metric_box("RUN TIME",   "s")
+        self.wkt_box, self.wkt_val = create_metric_box("WAKTU REM",  "Detik")
+        self.lux_box, self.lux_val = create_metric_box("LUX METER",  "Lux")
+        self.run_box, self.run_val = create_metric_box("RUN TIME",   "s")
         b_row.addWidget(self.wkt_box)
         b_row.addWidget(self.lux_box)
         b_row.addWidget(self.run_box)
@@ -61,8 +36,8 @@ class BrakeCenterPanel(QVBoxLayout):
 
         btn_row = QHBoxLayout()
         btn_row.setSpacing(Spacing.MD)
-        self.start_btn = _action_btn("▶  START UJI REM", "startButton", on_start_slot)
-        self.reset_btn = _action_btn("↺  RESET CYCLE",   "secondaryButton", on_reset_slot)
+        self.start_btn = create_action_button("▶  START UJI REM", "startButton", on_start_slot)
+        self.reset_btn = create_action_button("↺  RESET CYCLE",   "secondaryButton", on_reset_slot)
         btn_row.addWidget(self.start_btn)
         btn_row.addWidget(self.reset_btn)
         btn_row.addStretch(1)

@@ -4,19 +4,8 @@ Extracted to respect RULES.md §2 (max ~300 lines per file).
 """
 
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
+from ui.components.common.factory import create_divider, create_label
 from ui.styles import Spacing
-
-
-def _lbl(text: str, obj_name: str) -> QLabel:
-    l = QLabel(text)
-    l.setObjectName(obj_name)
-    return l
-
-
-def _divider() -> QFrame:
-    f = QFrame()
-    f.setObjectName("divider")
-    return f
 
 
 class BrakeVehiclePanel(QFrame):
@@ -31,11 +20,11 @@ class BrakeVehiclePanel(QFrame):
         lay.setContentsMargins(Spacing.MD, Spacing.MD, Spacing.MD, Spacing.MD)
         lay.setSpacing(Spacing.SM)
 
-        lay.addWidget(_lbl("DATA KENDARAAN", "sectionTitle"))
-        lay.addWidget(_divider())
+        lay.addWidget(create_label("DATA KENDARAAN", "sectionTitle"))
+        lay.addWidget(create_divider())
 
         def _info_row(label: str, default: str) -> QLabel:
-            lay.addWidget(_lbl(label, "fieldLabel"))
+            lay.addWidget(create_label(label, "fieldLabel"))
             val = QLabel(default)
             val.setObjectName("weatherRow")
             lay.addWidget(val)
@@ -46,8 +35,8 @@ class BrakeVehiclePanel(QFrame):
         self.lbl_weight      = _info_row("Bobot Uji", "—")
 
         lay.addSpacing(Spacing.SM)
-        lay.addWidget(_lbl("SIKLUS", "sectionTitle"))
-        lay.addWidget(_divider())
+        lay.addWidget(create_label("SIKLUS", "sectionTitle"))
+        lay.addWidget(create_divider())
 
         self.cycle_labels: list[QLabel] = []
         cycle_names = ["Akselerasi", "Kec. Stabil", "Pengereman", "Berhenti"]
